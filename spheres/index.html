@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Spheres</title>
+</head>
+<body class="sans-serif">
+<script type="text/javascript" src="/three.js"></script>
+<script type="text/javascript" src="/detector.js"></script>
+<script type="text/javascript" src="/open_sans_light.typeface.js"></script>
+<script type="text/javascript">
+<!--
+if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+
+var viewport, scene, camera, cameraTarget, renderer;
+var looseness = 10;
+
+function half_sphere(diameter, scene, previous) {
+    var sphere = new THREE.SphereGeometry(diameter / 2, 30, 16, Math.PI/2, Math.PI*2, 0, Math.PI / 2);
+    sphere.computeBoundingSphere();
+    var mat = new THREE.MeshPhongMaterial({color: 0xffffff, side: THREE.DoubleSide});
+    var mesh = this.mesh = new THREE.Mesh(sphere, mat);
+
+    mesh.rotation.x = Math.PI * 1.5;
+    mesh.position.y = 350;
+
+    scene.add(mesh);
+
+
+    var _this = this;
+
+    this.previous = previous || null;
+
+    this.oxvel = Math.random();
+    this.oyvel = Math.random();
+
+    this.xvel = Math.sin(this.oxvel) / 10;
+    this.yvel = Math.cos(this.oyvel) / 10;
+
+    var i = 0;
+
+    this.tick = function() {
+        if(this.previous === null) {
+            i++;
+            _this.xvel = Math.cos(i / 1000 + this.oxvel) / 10 * (Math.cos(i / 10000) / 2 + 0.75);
+            _this.yvel = Math.cos(i / 1000 + this.oyvel) / 10 * (Math.cos(i / 10000) / 2 + 0.75);
+
+            mesh.rotation.x += _this.xvel;
+            mesh.rotation.z += _this.yvel;
+        } else {
+            mesh.rotation.x = (mesh.rotation.x * (looseness - 1) + previous.mesh.rotation.x) / looseness;
+            mesh.rotation.z = (mesh.rotation.z * (looseness - 1) + previous.mesh.rotation.z) / looseness;
+        }
+    };
+
+    this.hide = function() {mesh.visible = false;};
+    this.show = function() {mesh.visible = true;};
+}
+
+function init() {
+    viewport = document.createElement("div");
+    document.body.appendChild(viewport);
+    
+    scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0xffffff, 0, 4000);
+    
+    camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 100, 2500);
+    camera.position.set(0, 400, 1000);
+    scene.add(camera);
+    
+    cameraTarget = new THREE.Vector3(0, 330, 0);
+    
+    var dirLight = new THREE.DirectionalLight(0xffffff, 0.35);
+    dirLight.position.set(0, 0, 1).normalize();
+    scene.add(dirLight);
+
+    var ambientLight = new THREE.AmbientLight(0xaaaaaa);
+    scene.add(ambientLight);
+
+    var spheres = [];
+    var count = 12
+    for(var i = 0; i < count; i++) {
+        spheres[i] = new half_sphere((count - i) * 20 + 50, scene, spheres[i - 1]);
+    }
+    
+    renderer = new THREE.WebGLRenderer({antialias: true, maxLights: 10});
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(scene.fog.color, 1);
+    
+    viewport.appendChild(renderer.domElement);
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        for(var i = 0; i < spheres.length; i++) {
+            spheres[i].tick();
+        }
+        camera.lookAt(cameraTarget);
+        renderer.render(scene, camera);
+    }
+    animate();
+    
+}
+
+function createText(text) {
+    name_text_geo = new THREE.TextGeometry(
+        text,
+        {size: 20,
+         height: 20,
+         curveSegments: 3,
+         font: "open sans",
+         weight: "light",
+         style: "normal",
+         material: 0,
+         extrudeMaterial: 1}
+    );
+    name_text_geo.materials = [textMaterialFront, textMaterialSide];
+    name_text_geo.computeBoundingBox();
+    name_text_geo.computeVertexNormals();
+    
+    var triangleAreaHeuristics = 0.1 * 1000;
+    for(var i = 0; i < name_text_geo.faces.length; i++) {
+        var face = name_text_geo.faces[i];
+        if(face.materialIndex != 1) continue;
+        for(var j = 0; j < face.vertexNormals.length; j++) {
+            face.vertexNormals[j].z = 0;
+            face.vertexNormals[j].normalize();
+        }
+        var va = name_text_geo.vertices[face.a].position,
+            vb = name_text_geo.vertices[face.b].position,
+            vc = name_text_geo.vertices[face.c].position;
+        var s = THREE.GeometryUtils.triangleArea(va, vb, vc);
+        if(s > triangleAreaHeuristics)
+            for(var j = 0; j < face.vertexNormals.length; j++)
+                face.vertexNormals[j].copy(face.normal);
+    }
+    
+    var centerOffset = -0.5 * (name_text_geo.boundingBox.max.x - name_text_geo.boundingBox.min.x);
+    name_mesh = new THREE.Mesh(name_text_geo, name_material);
+    
+    name_mesh.position.x = -1.7 * (name_text_geo.boundingBox.max.x - name_text_geo.boundingBox.min.x);
+    name_mesh.position.y = 0;
+    name_mesh.position.z = 0;
+    
+    name_mesh.rotation.x = 0;
+    name_mesh.rotation.y = Math.PI * 2;
+    name_parent.add(name_mesh);
+}
+
+-->
+</script>
+<script type="text/javascript">
+<!--
+if (Detector.webgl) {
+    document.body.className += " webgl";
+    init();
+}
+-->
+</script>
+</body>
+</html>

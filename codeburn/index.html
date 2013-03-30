@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Code Burn</title>
+<link href='http://fonts.googleapis.com/css?family=Averia+Gruesa+Libre' rel='stylesheet' type='text/css'>
+<style type="text/css">
+body, html {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+body {
+  font-family: 'Averia Gruesa Libre', Arial, sans-serif;
+  background: url('yule.gif') no-repeat center center;
+  background-size: cover;
+}
+.loaded #loading,
+#loaded {
+  opacity: 0;
+}
+.loaded #loaded,
+#loading {
+  opacity: 1;
+}
+
+#loading, #loaded {
+  color: #fff;
+  font-size: 400%;
+  position: fixed;
+  -webkit-transition: opacity 2s;
+  transition: opacity 2s;
+}
+#loading {
+  bottom: 0.5em;
+  left: 0.5em;
+}
+#loaded {
+  left: 0;
+  right: 0;
+  text-align: center;
+  text-shadow: 0 0 30px #000;
+}
+
+</style>
+</head>
+<body>
+  <div id="loading">
+    Loading data from Github...
+  </div>
+  <div id="loaded">
+    <span id="lines">0</span> LoC removed.
+  </div>
+<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+<script type="text/javascript">
+var lines_burned = 0;
+var one_week = (new Date()).getTime() / 1000 - 3600 * 24 * 7 * 2;
+function loader(url) {
+  var def = $.Deferred();
+  function _try() {
+    $.post('/fetch', {url: url}).done(def.resolve).fail(_try);
+  }
+  _try();
+  def.done(function(data) {
+    if (typeof data !== 'object') {
+      data = JSON.parse(data);
+    }
+    lines_burned += data.reduce(function(a, b) {
+      if (b[0] < one_week) {
+        return a;
+      }
+      console.log(b);
+      return a - Math.min(0, b[1] + b[2]);
+    }, 0);
+  });
+  return def.promise();
+}
+var requests = [
+  'https://github.com/mozilla/zamboni/graphs/code-frequency-data',
+  'https://github.com/mozilla/fireplace/graphs/code-frequency-data',
+  'https://github.com/mozilla/kuma/graphs/code-frequency-data',
+  'https://github.com/mozilla/kitsune/graphs/code-frequency-data'
+].map(loader);
+$.when.apply($, requests).done(function() {
+  document.getElementById('lines').innerHTML = lines_burned;
+  document.body.className += ' loaded';
+});
+</script>
+</body>
+</html>
